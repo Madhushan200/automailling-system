@@ -154,9 +154,9 @@ export const crmStore = {
         city: hotel.city || "Sri Lanka",
         notes: hotel.notes || null,
         active: hotel.active ?? true,
-      }, { onConflict: "hotel_name" }).then(({ error }) => {
+      }, { onConflict: "hotel_name" }).then(({ error }: { error?: any }) => {
         if (error) console.warn("Supabase Hotel Sync Notice:", error.message);
-      }).catch((e) => console.warn(e));
+      }).catch((e: any) => console.warn(e));
     }
   },
   updateHotel(id: string, updates: Partial<Hotel>): void {
@@ -174,9 +174,9 @@ export const crmStore = {
         city: updated.city || "Sri Lanka",
         notes: updated.notes || null,
         active: updated.active ?? true,
-      }, { onConflict: "hotel_name" }).then(({ error }) => {
+      }, { onConflict: "hotel_name" }).then(({ error }: { error?: any }) => {
         if (error) console.warn("Supabase Hotel Sync Notice:", error.message);
-      }).catch((e) => console.warn(e));
+      }).catch((e: any) => console.warn(e));
     }
   },
   deleteHotel(id: string): void {
@@ -185,9 +185,9 @@ export const crmStore = {
     this.saveHotels(hotels);
 
     if (isSupabaseConfigured && supabase && target) {
-      supabase.from("hotels").delete().eq("hotel_name", target.hotel_name).then(({ error }) => {
+      supabase.from("hotels").delete().eq("hotel_name", target.hotel_name).then(({ error }: { error?: any }) => {
         if (error) console.warn("Supabase Hotel Delete Notice:", error.message);
-      }).catch((e) => console.warn(e));
+      }).catch((e: any) => console.warn(e));
     }
   },
 
@@ -326,9 +326,9 @@ export const crmStore = {
         accommodation_rows: tour.accommodation_rows || [],
         transportation_rows: tour.transportation_rows || [],
         miscellaneous_rows: tour.miscellaneous_rows || [],
-      }, { onConflict: "tour_reference" }).then(({ error }) => {
+      }, { onConflict: "tour_reference" }).then(({ error }: { error?: any }) => {
         if (error) console.warn("Supabase Tour Sync Notice:", error.message);
-      }).catch((e) => console.warn("Supabase Tour Sync error:", e));
+      }).catch((e: any) => console.warn("Supabase Tour Sync error:", e));
     }
   },
   updateTour(id: string, updates: Partial<Tour>): void {
@@ -340,9 +340,9 @@ export const crmStore = {
     this.saveTours(tours);
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from("tours").delete().or(`tour_reference.eq.${id},id.eq.${id}`).then(({ error }) => {
+      supabase.from("tours").delete().or(`tour_reference.eq.${id},id.eq.${id}`).then(({ error }: { error?: any }) => {
         if (error) console.warn("Supabase Delete Notice:", error.message);
-      }).catch((e) => console.warn(e));
+      }).catch((e: any) => console.warn(e));
     }
   },
 
