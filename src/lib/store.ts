@@ -28,12 +28,16 @@ import {
   TourExpense,
   WhatsAppLog,
   DocumentItem,
+  Vehicle,
+  MiscellaneousMasterItem,
 } from "./types";
 import {
   initialCompanySettings,
   initialSuppliers,
   initialHotels,
   initialTransportProviders,
+  initialVehicles,
+  initialMiscellaneousMaster,
   initialActivities,
   initialRestaurants,
   initialGuides,
@@ -63,6 +67,8 @@ const STORAGE_KEYS = {
   SETTINGS: "dodoz_crm_settings",
   SUPPLIERS: "dodoz_erp_suppliers",
   HOTELS: "dodoz_crm_hotels",
+  VEHICLES: "dodoz_crm_vehicles",
+  MISC_MASTER: "dodoz_crm_misc_master",
   TRANSPORT: "dodoz_erp_transport",
   ACTIVITIES: "dodoz_erp_activities",
   RESTAURANTS: "dodoz_erp_restaurants",
@@ -187,6 +193,130 @@ export const crmStore = {
     if (isSupabaseConfigured && supabase && target) {
       supabase.from("hotels").delete().eq("hotel_name", target.hotel_name).then(({ error }: { error?: any }) => {
         if (error) console.warn("Supabase Hotel Delete Notice:", error.message);
+      }).catch((e: any) => console.warn(e));
+    }
+  },
+
+  // VEHICLES FLEET MASTER
+  getVehicles(): Vehicle[] {
+    return getStored(STORAGE_KEYS.VEHICLES, initialVehicles);
+  },
+  saveVehicles(vehicles: Vehicle[]): void {
+    setStored(STORAGE_KEYS.VEHICLES, vehicles);
+  },
+  addVehicle(vehicle: Vehicle): void {
+    const list = this.getVehicles();
+    list.unshift(vehicle);
+    this.saveVehicles(list);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from("vehicles").upsert({
+        id: vehicle.id,
+        vehicle_name: vehicle.vehicle_name,
+        vehicle_class: vehicle.vehicle_class,
+        seats: vehicle.seats,
+        per_km_rate: vehicle.per_km_rate,
+        per_day_rate: vehicle.per_day_rate,
+        driver_daily_allowance: vehicle.driver_daily_allowance,
+        driver_accommodation_rate: vehicle.driver_accommodation_rate,
+        currency: vehicle.currency || "LKR",
+        description: vehicle.description,
+        active: vehicle.active,
+      }).then(({ error }: { error?: any }) => {
+        if (error) console.warn("Supabase Vehicle Sync Notice:", error.message);
+      }).catch((e: any) => console.warn(e));
+    }
+  },
+  updateVehicle(id: string, updates: Partial<Vehicle>): void {
+    const list = this.getVehicles().map((v) => (v.id === id ? { ...v, ...updates } : v));
+    this.saveVehicles(list);
+
+    const updated = list.find((v) => v.id === id);
+    if (isSupabaseConfigured && supabase && updated) {
+      supabase.from("vehicles").upsert({
+        id: updated.id,
+        vehicle_name: updated.vehicle_name,
+        vehicle_class: updated.vehicle_class,
+        seats: updated.seats,
+        per_km_rate: updated.per_km_rate,
+        per_day_rate: updated.per_day_rate,
+        driver_daily_allowance: updated.driver_daily_allowance,
+        driver_accommodation_rate: updated.driver_accommodation_rate,
+        currency: updated.currency || "LKR",
+        description: updated.description,
+        active: updated.active,
+      }).then(({ error }: { error?: any }) => {
+        if (error) console.warn("Supabase Vehicle Update Notice:", error.message);
+      }).catch((e: any) => console.warn(e));
+    }
+  },
+  deleteVehicle(id: string): void {
+    const list = this.getVehicles().filter((v) => v.id !== id);
+    this.saveVehicles(list);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from("vehicles").delete().eq("id", id).then(({ error }: { error?: any }) => {
+        if (error) console.warn("Supabase Vehicle Delete Notice:", error.message);
+      }).catch((e: any) => console.warn(e));
+    }
+  },
+
+  // MISCELLANEOUS & ENTRANCE FEES MASTER
+  getMiscellaneousMaster(): MiscellaneousMasterItem[] {
+    return getStored(STORAGE_KEYS.MISC_MASTER, initialMiscellaneousMaster);
+  },
+  saveMiscellaneousMaster(items: MiscellaneousMasterItem[]): void {
+    setStored(STORAGE_KEYS.MISC_MASTER, items);
+  },
+  addMiscellaneousItem(item: MiscellaneousMasterItem): void {
+    const list = this.getMiscellaneousMaster();
+    list.unshift(item);
+    this.saveMiscellaneousMaster(list);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from("miscellaneous_items").upsert({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        default_rate: item.default_rate,
+        unit: item.unit,
+        currency: item.currency,
+        is_per_person: item.is_per_person,
+        description: item.description,
+        active: item.active,
+      }).then(({ error }: { error?: any }) => {
+        if (error) console.warn("Supabase Misc Master Sync Notice:", error.message);
+      }).catch((e: any) => console.warn(e));
+    }
+  },
+  updateMiscellaneousItem(id: string, updates: Partial<MiscellaneousMasterItem>): void {
+    const list = this.getMiscellaneousMaster().map((m) => (m.id === id ? { ...m, ...updates } : m));
+    this.saveMiscellaneousMaster(list);
+
+    const updated = list.find((m) => m.id === id);
+    if (isSupabaseConfigured && supabase && updated) {
+      supabase.from("miscellaneous_items").upsert({
+        id: updated.id,
+        name: updated.name,
+        category: updated.category,
+        default_rate: updated.default_rate,
+        unit: updated.unit,
+        currency: updated.currency,
+        is_per_person: updated.is_per_person,
+        description: updated.description,
+        active: updated.active,
+      }).then(({ error }: { error?: any }) => {
+        if (error) console.warn("Supabase Misc Master Update Notice:", error.message);
+      }).catch((e: any) => console.warn(e));
+    }
+  },
+  deleteMiscellaneousItem(id: string): void {
+    const list = this.getMiscellaneousMaster().filter((m) => m.id !== id);
+    this.saveMiscellaneousMaster(list);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from("miscellaneous_items").delete().eq("id", id).then(({ error }: { error?: any }) => {
+        if (error) console.warn("Supabase Misc Master Delete Notice:", error.message);
       }).catch((e: any) => console.warn(e));
     }
   },
@@ -387,17 +517,138 @@ export const crmStore = {
     this.saveCostings(costings);
   },
 
-  // QUOTATIONS
+  // QUOTATIONS & PROPOSALS
   getQuotations(): Quotation[] {
     return getStored(STORAGE_KEYS.QUOTATIONS, initialQuotations);
+  },
+  getQuotationById(id: string): Quotation | undefined {
+    return this.getQuotations().find((q) => q.id === id || q.quote_number === id);
   },
   saveQuotations(quotations: Quotation[]): void {
     setStored(STORAGE_KEYS.QUOTATIONS, quotations);
   },
   addQuotation(quote: Quotation): void {
     const list = this.getQuotations();
-    list.unshift(quote);
+    // Prepend new quotation
+    const updated = [quote, ...list.filter((q) => q.id !== quote.id && q.quote_number !== quote.quote_number)];
+    this.saveQuotations(updated);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from("quotations").upsert({
+        id: quote.id,
+        quote_number: quote.quote_number,
+        revision_number: quote.revision_number || 0,
+        revision_label: quote.revision_label || "Original",
+        client_name: quote.client_name || "",
+        client_email: quote.client_email || null,
+        client_phone: quote.client_phone || null,
+        tour_name: quote.tour_name || "",
+        arrival_date: quote.arrival_date || null,
+        departure_date: quote.departure_date || null,
+        total_pax: quote.total_pax || 1,
+        currency: quote.currency || "USD",
+        total_amount: quote.total_amount || 0,
+        status: quote.status || "Draft",
+        accommodation_items: quote.accommodation_items || [],
+        transport_days: quote.transport_days || [],
+        misc_items: quote.misc_items || [],
+        costing_summary: quote.costing_summary || {},
+        pricing_options: quote.pricing_options || [],
+        inclusions: quote.inclusions || [],
+        exclusions: quote.exclusions || [],
+        terms_and_conditions: quote.terms_and_conditions || "",
+        versions: quote.versions || [],
+      }, { onConflict: "quote_number" }).then(({ error }: { error?: any }) => {
+        if (error) console.warn("Supabase Quotation Sync Notice:", error.message);
+      }).catch((e: any) => console.warn(e));
+    }
+  },
+  updateQuotation(id: string, updates: Partial<Quotation>): void {
+    const list = this.getQuotations();
+    const existing = list.find((q) => q.id === id || q.quote_number === id);
+    if (!existing) return;
+
+    const merged: Quotation = {
+      ...existing,
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    const updatedList = list.map((q) => (q.id === id || q.quote_number === id ? merged : q));
+    this.saveQuotations(updatedList);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from("quotations").upsert({
+        id: merged.id,
+        quote_number: merged.quote_number,
+        revision_number: merged.revision_number || 0,
+        revision_label: merged.revision_label || "Original",
+        client_name: merged.client_name || "",
+        client_email: merged.client_email || null,
+        client_phone: merged.client_phone || null,
+        tour_name: merged.tour_name || "",
+        arrival_date: merged.arrival_date || null,
+        departure_date: merged.departure_date || null,
+        total_pax: merged.total_pax || 1,
+        currency: merged.currency || "USD",
+        total_amount: merged.total_amount || 0,
+        status: merged.status || "Draft",
+        accommodation_items: merged.accommodation_items || [],
+        transport_days: merged.transport_days || [],
+        misc_items: merged.misc_items || [],
+        costing_summary: merged.costing_summary || {},
+        pricing_options: merged.pricing_options || [],
+        inclusions: merged.inclusions || [],
+        exclusions: merged.exclusions || [],
+        terms_and_conditions: merged.terms_and_conditions || "",
+        versions: merged.versions || [],
+      }, { onConflict: "quote_number" }).then(({ error }: { error?: any }) => {
+        if (error) console.warn("Supabase Quotation Update Notice:", error.message);
+      }).catch((e: any) => console.warn(e));
+    }
+  },
+  createQuotationRevision(quoteId: string, changeNotes?: string): Quotation | null {
+    const list = this.getQuotations();
+    const original = list.find((q) => q.id === quoteId || q.quote_number === quoteId);
+    if (!original) return null;
+
+    const nextRevisionNum = (original.revision_number || 0) + 1;
+    const revisionLabel = `Rev ${nextRevisionNum}`;
+
+    // Snapshot existing version
+    const versionSnapshot = {
+      version_number: original.revision_number || 0,
+      revision_label: original.revision_label || "Original",
+      saved_at: original.updated_at || original.created_at || new Date().toISOString(),
+      change_notes: changeNotes || `Revision ${nextRevisionNum} created`,
+      snapshot: { ...original },
+      pdf_url: original.pdf_url,
+    };
+
+    const existingVersions = original.versions || [];
+    const updatedVersions = [versionSnapshot, ...existingVersions];
+
+    const revisedQuotation: Quotation = {
+      ...original,
+      revision_number: nextRevisionNum,
+      revision_label: revisionLabel,
+      versions: updatedVersions,
+      status: "Draft",
+      updated_at: new Date().toISOString(),
+    };
+
+    this.updateQuotation(original.id, revisedQuotation);
+    return revisedQuotation;
+  },
+  deleteQuotation(id: string): void {
+    const list = this.getQuotations().filter((q) => q.id !== id && q.quote_number !== id);
     this.saveQuotations(list);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from("quotations").delete().or(`id.eq.${id},quote_number.eq.${id}`).then(({ error }: { error?: any }) => {
+        if (error) console.warn("Supabase Quotation Delete Notice:", error.message);
+      }).catch((e: any) => console.warn(e));
+    }
   },
 
   // INVOICES

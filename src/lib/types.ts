@@ -260,19 +260,38 @@ export interface Hotel {
 
 export interface Vehicle {
   id: string;
-  transport_provider_id: string;
+  company_id?: string;
+  transport_provider_id?: string;
   vehicle_name: string;
-  vehicle_class: VehicleClass;
-  registration_number: string;
+  vehicle_class?: VehicleClass | string;
+  registration_number?: string;
   seats: number;
-  luggage_capacity: number;
-  air_conditioned: boolean;
+  luggage_capacity?: number;
+  air_conditioned?: boolean;
   assigned_driver_name?: string;
   assigned_driver_phone?: string;
-  per_km_rate?: number;
-  per_day_rate?: number;
+  per_km_rate: number; // LKR per KM (e.g. 140 for Mini Coach)
+  per_day_rate?: number; // LKR per Day
+  driver_daily_allowance?: number; // LKR (e.g. 2500)
+  driver_accommodation_rate?: number; // LKR (e.g. 5000)
   airport_transfer_rate?: number;
   extra_km_rate?: number;
+  currency?: string;
+  description?: string;
+  active?: boolean;
+}
+
+export interface MiscellaneousMasterItem {
+  id: string;
+  company_id?: string;
+  name: string;
+  category: "Entrance Fee" | "Activity" | "Meal" | "Ticket" | "Vehicle" | "Driver" | "Guide" | "Other";
+  default_rate: number;
+  unit: "Per Person" | "Per Group" | "Per Day" | "Per Vehicle" | "Per Trip";
+  currency: string;
+  is_per_person: boolean;
+  description?: string;
+  active: boolean;
 }
 
 export interface TransportProvider {
@@ -598,39 +617,226 @@ export interface TourCosting {
 // 8. Quotation & Itinerary
 // ==========================================
 export interface QuotationPricingOption {
-  pricing_type: "Per Person" | "Per Couple" | "Total Group" | "Per Family";
+  pricing_type: "Per Person" | "Per Couple" | "Total Group" | "Per Family" | "SGL PP" | "DBL PP" | "TPL PP";
   pax_label: string;
   amount: number;
   currency: string;
 }
 
+export interface QuotationAccommodationItem {
+  id: string;
+  date?: string;
+  night_number?: number;
+  hotel_id?: string;
+  hotel_name: string;
+  city?: string;
+  meal_plan?: string; // RO, BB, HB, FB, AI
+  room_type?: string; // SGL, DBL, TPL, Family, etc.
+  sgl_rooms?: number;
+  sgl_rate?: number;
+  dbl_rooms?: number;
+  dbl_rate?: number;
+  tpl_rooms?: number;
+  tpl_rate?: number;
+  extra_rooms?: number;
+  extra_rate?: number;
+  nights_count?: number;
+  is_rate_per_night?: boolean;
+  notes?: string;
+}
+
+export interface QuotationTransportDay {
+  id: string;
+  day_number: number;
+  day_label: string; // e.g. "DAY 1"
+  date?: string;
+  description?: string;
+  route: string; // e.g. "Airport → Kandy"
+  km: number;
+  vehicle_type?: string;
+  driver_batta?: number; // LKR
+  guide_fee?: number; // LKR
+  highway_ticket?: number; // LKR
+  airport_ticket?: number; // LKR
+  driver_accom?: number; // LKR
+  other_cost?: number; // LKR
+  notes?: string;
+}
+
+export interface QuotationMiscItem {
+  id: string;
+  item: string; // e.g. "WATER", "KELANIYA TEMPLE", "JEEP RATE"
+  category?: "Entrance Fee" | "Activity" | "Meal" | "Ticket" | "Vehicle" | "Driver" | "Guide" | "Other";
+  unit?: string; // "Per Person", "Per Group"
+  qty: number;
+  rate: number;
+  is_per_person: boolean;
+  notes?: string;
+}
+
+export interface QuotationCostingSummary {
+  currency: string;
+  totalPax: number;
+
+  // Accommodation
+  accommodationTotal: number;
+  sglCostPP: number;
+  dblCostPP: number;
+  tplCostPP: number;
+
+  // Transport
+  transportTotalUSD: number;
+  transportTotalLKR: number;
+  totalKM: number;
+  transportCostPP: number;
+
+  // Miscellaneous
+  miscTotal: number;
+  miscCostPP: number;
+
+  // Net Summary
+  netCostSubtotal: number;
+  netCostPP: number;
+
+  // Markup & Profit
+  markupType: "percentage" | "fixed";
+  markupValue: number;
+  totalMarkupAmount: number;
+  markupPPAmount: number;
+  discountAmount: number;
+  taxPercent: number;
+  taxAmount: number;
+  grossProfit: number;
+  grossMarginPercent: number;
+
+  // Final Selling
+  finalSellingPrice: number;
+  finalPPRate: number;
+
+  // Room Specific Selling PP
+  sglSellingPP: number;
+  dblSellingPP: number;
+  tplSellingPP: number;
+
+  // Overrides & Warnings
+  isPriceOverridden?: boolean;
+  isPPRateOverridden?: boolean;
+  capacityWarning?: string;
+}
+
+export interface QuotationVersion {
+  version_number: number; // 1, 2, 3...
+  revision_label: string; // "Rev 1", "Rev 2"
+  saved_at: string;
+  saved_by?: string;
+  change_notes?: string;
+  snapshot: Partial<Quotation>;
+  pdf_url?: string;
+}
+
 export interface Quotation {
   id: string;
   company_id?: string;
-  quote_number: string;
+  quote_number: string; // e.g. "DL-2026-0001"
+  revision_number: number; // e.g. 0, 1, 2
+  revision_label: string; // "Original", "Rev 1", "Rev 2"
+  parent_quote_id?: string;
   tour_id?: string;
   lead_id?: string;
-  client_name: string;
+
+  // Customer Details (ALL OPTIONAL / NON-MANDATORY)
+  client_name?: string;
   client_email?: string;
   client_phone?: string;
-  tour_name: string;
-  travel_start_date: string;
-  travel_end_date: string;
-  duration_days: number;
-  total_pax: number;
+  client_nationality?: string;
+  client_country?: string;
+  client_company?: string;
+  destination?: string;
+  tour_name?: string;
+
+  // Travel Dates & Overrides
+  arrival_date?: string;
+  departure_date?: string;
+  travel_start_date?: string; // alias
+  travel_end_date?: string; // alias
+  nights_count?: number;
+  days_count?: number;
+  is_manual_nights?: boolean;
+  is_manual_days?: boolean;
+
+  // Passenger Counts & Overrides
+  adults_count?: number;
+  children_count?: number;
+  infants_count?: number;
+  total_pax?: number;
+  is_manual_pax?: boolean;
+
+  // Vehicle Selection
+  vehicle_id?: string;
+  vehicle_name?: string;
+  vehicle_class?: string;
+  vehicle_capacity?: number;
+  vehicle_rate_per_km?: number;
+  num_vehicles?: number;
+  assigned_driver_name?: string;
+  assigned_driver_phone?: string;
+  vehicle_registration_number?: string;
+  pickup_date?: string;
+  pickup_time?: string;
+  pickup_location?: string;
+  dropoff_location?: string;
+
+  // Excel Costing Tables
+  accommodation_items: QuotationAccommodationItem[];
+  transport_days: QuotationTransportDay[];
+  misc_items: QuotationMiscItem[];
+  itinerary_days?: ItineraryDay[];
+
+  // Costing Parameters & Matrix
   currency: string;
-  pricing_options: QuotationPricingOption[];
+  exchange_rate_lkr_usd: number; // default 325
+  markup_type: "percentage" | "fixed";
+  markup_value: number; // e.g. 20 (fixed $20/pax or 20%)
+  discount_amount?: number;
+  tax_percent?: number;
+
+  // Manual Overrides
+  manual_total_km?: number;
+  manual_transport_usd?: number;
+  manual_misc_total?: number;
+  manual_sgl_pp?: number;
+  manual_dbl_pp?: number;
+  manual_tpl_pp?: number;
+  manual_final_price?: number;
+  manual_final_pp_rate?: number;
+
+  // Calculated Financial Snapshot
+  costing_summary: QuotationCostingSummary;
+
+  // Pricing Options & Inclusions
+  pricing_options?: QuotationPricingOption[];
   total_amount: number;
-  inclusions: string[];
-  exclusions: string[];
-  terms_and_conditions: string;
-  payment_policy: string;
-  cancellation_policy: string;
-  valid_until: string;
+  selling_pp_rate?: number;
+  inclusions?: string[];
+  exclusions?: string[];
+  terms_and_conditions?: string;
+  payment_policy?: string;
+  cancellation_policy?: string;
+  notes?: string;
+  internal_notes?: string;
+
+  // Status & Metadata
   status: QuotationStatus;
+  valid_until?: string;
   pdf_url?: string;
+  internal_pdf_url?: string;
   created_at: string;
+  updated_at?: string;
   sent_at?: string;
+  accepted_at?: string;
+
+  // Revisions & Version History
+  versions?: QuotationVersion[];
 }
 
 export interface ItineraryDay {

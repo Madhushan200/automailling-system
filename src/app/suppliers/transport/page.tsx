@@ -106,6 +106,7 @@ export default function TransportSuppliersPage() {
       assigned_driver_phone: driverPhone,
       per_km_rate: 0.85,
       per_day_rate: 85,
+      active: true,
     };
 
     const updated = providers.map((p) =>

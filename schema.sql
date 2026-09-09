@@ -336,3 +336,89 @@ INSERT INTO tours (
 ) ON CONFLICT (tour_reference) DO UPDATE SET
     client_name = EXCLUDED.client_name,
     accommodation_rows = EXCLUDED.accommodation_rows;
+
+-- ============================================================================
+-- 8. VEHICLES FLEET MASTER TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS vehicles (
+    id VARCHAR(100) PRIMARY KEY,
+    vehicle_name VARCHAR(255) NOT NULL,
+    vehicle_class VARCHAR(100),
+    registration_number VARCHAR(100),
+    seats INTEGER NOT NULL DEFAULT 4,
+    per_km_rate NUMERIC(10,2) NOT NULL DEFAULT 140.00,
+    per_day_rate NUMERIC(10,2) DEFAULT 25000.00,
+    driver_daily_allowance NUMERIC(10,2) DEFAULT 2500.00,
+    driver_accommodation_rate NUMERIC(10,2) DEFAULT 5000.00,
+    currency VARCHAR(10) DEFAULT 'LKR',
+    description TEXT,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================================
+-- 9. MISCELLANEOUS & ENTRANCE FEES MASTER TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS miscellaneous_items (
+    id VARCHAR(100) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(100) DEFAULT 'Entrance Fee',
+    default_rate NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    unit VARCHAR(100) DEFAULT 'Per Person',
+    currency VARCHAR(10) DEFAULT 'USD',
+    is_per_person BOOLEAN DEFAULT true,
+    description TEXT,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================================
+-- 10. CLIENT QUOTATIONS & PROPOSALS TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS quotations (
+    id VARCHAR(100) PRIMARY KEY,
+    quote_number VARCHAR(100) NOT NULL UNIQUE,
+    revision_number INTEGER DEFAULT 0,
+    revision_label VARCHAR(50) DEFAULT 'Original',
+    client_name VARCHAR(255),
+    client_email VARCHAR(255),
+    client_phone VARCHAR(100),
+    client_nationality VARCHAR(100),
+    tour_name VARCHAR(255),
+    arrival_date DATE,
+    departure_date DATE,
+    total_pax INTEGER DEFAULT 1,
+    currency VARCHAR(10) DEFAULT 'USD',
+    total_amount NUMERIC(12,2) DEFAULT 0.00,
+    status VARCHAR(50) DEFAULT 'Draft',
+    
+    -- Embedded Costing Matrix & Tables
+    accommodation_items JSONB DEFAULT '[]'::jsonb,
+    transport_days JSONB DEFAULT '[]'::jsonb,
+    misc_items JSONB DEFAULT '[]'::jsonb,
+    costing_summary JSONB DEFAULT '{}'::jsonb,
+    pricing_options JSONB DEFAULT '[]'::jsonb,
+    inclusions JSONB DEFAULT '[]'::jsonb,
+    exclusions JSONB DEFAULT '[]'::jsonb,
+    terms_and_conditions TEXT,
+    versions JSONB DEFAULT '[]'::jsonb,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE miscellaneous_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quotations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read access to vehicles" ON vehicles FOR SELECT USING (true);
+CREATE POLICY "Allow full access to vehicles" ON vehicles FOR ALL USING (true);
+
+CREATE POLICY "Allow public read access to miscellaneous_items" ON miscellaneous_items FOR SELECT USING (true);
+CREATE POLICY "Allow full access to miscellaneous_items" ON miscellaneous_items FOR ALL USING (true);
+
+CREATE POLICY "Allow public read access to quotations" ON quotations FOR SELECT USING (true);
+CREATE POLICY "Allow full access to quotations" ON quotations FOR ALL USING (true);
