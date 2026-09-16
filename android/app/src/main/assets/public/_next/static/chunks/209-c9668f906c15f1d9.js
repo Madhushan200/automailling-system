@@ -13,65 +13,91 @@
   const API_BASE = "https://me-engineering-api.madhushan875.workers.dev";
 
   function i(e, t = []){
-    let r = e.hotel_name || "ME Colombo",
+    if (!e || typeof e !== "object") return null;
+    let r = e.hotel_name || e.hotelName || "ME Colombo",
         o = e.description || "",
-        match = o.match(/^\[Property:\s*([^\]]+)\]\s*\n?/i);
+        match = typeof o === "string" ? o.match(/^\[Property:\s*([^\]]+)\]\s*\n?/i) : null;
     if (match) {
       r = match[1].trim();
       o = o.replace(/^\[Property:\s*([^\]]+)\]\s*\n?/i, "").trim();
     }
-    if (r.toLowerCase() === "neva") r = "NEVA";
+    if (typeof r === "string" && r.toLowerCase() === "neva") r = "NEVA";
+
+    // Safely parse status history
+    let rawHist = Array.isArray(t) && t.length > 0 ? t : (Array.isArray(e.status_history) ? e.status_history : (Array.isArray(e.history) ? e.history : []));
+    let safeHist = [];
+    if (typeof rawHist === "string") {
+      try { safeHist = JSON.parse(rawHist); } catch(err) { safeHist = []; }
+    } else if (Array.isArray(rawHist)) {
+      safeHist = rawHist;
+    }
+
+    let historyList = (safeHist || []).filter(Boolean).map(h => ({
+      id: h.id || (0, a.l)(),
+      workOrderId: h.work_order_id || h.workOrderId || e.id,
+      status: h.status || "NEW",
+      timestamp: h.timestamp || h.created_at || e.created_at || new Date().toISOString(),
+      actorName: h.actor_name || h.actorName || e.reported_by || e.reportedBy || "Staff",
+      note: h.note || ""
+    }));
+
+    if (historyList.length === 0) {
+      historyList = [{
+        id: (0, a.l)(),
+        workOrderId: e.id || (0, a.l)(),
+        status: e.status || "NEW",
+        timestamp: e.created_at || e.reported_at || new Date().toISOString(),
+        actorName: e.reported_by || e.reportedBy || "Staff",
+        note: "Request recorded in system"
+      }];
+    }
+
+    let woNum = e.work_order_number || e.workOrderNumber || ("WO-" + new Date().getFullYear() + "-" + String(Math.floor(Math.random()*9000)+1000));
 
     return {
-      id: e.id,
-      workOrderNumber: e.work_order_number,
+      id: e.id || (0, a.l)(),
+      workOrderNumber: woNum,
       hotelName: r,
-      reportedBy: e.reported_by,
-      reportedById: e.reported_by_id,
-      departmentId: e.department_id,
-      departmentName: e.department_name,
-      location: e.location,
-      roomNumber: e.room_number,
-      category: e.category,
-      title: e.title,
+      reportedBy: e.reported_by || e.reportedBy || "Staff",
+      reportedById: e.reported_by_id || e.reportedById || null,
+      departmentId: e.department_id || e.departmentId || null,
+      departmentName: e.department_name || e.departmentName || "Engineering",
+      location: e.location || "",
+      roomNumber: e.room_number || e.roomNumber || null,
+      category: e.category || "General",
+      title: e.title || "Maintenance Request",
       description: o,
-      photoUrl: e.photo_url,
-      afterPhotoUrl: e.after_photo_url,
-      guestAffected: !!e.guest_affected,
-      priority: e.priority,
-      suggestedPriority: e.suggested_priority,
-      status: e.status,
-      assignedTechnicianId: e.assigned_technician_id,
-      assignedTechnicianName: e.assigned_technician_name,
-      reportedAt: e.reported_at || e.created_at,
-      acceptedAt: e.accepted_at,
-      startedAt: e.started_at,
-      waitingAt: e.waiting_at,
-      completedAt: e.completed_at,
-      closedAt: e.closed_at,
-      acceptedBy: e.accepted_by,
-      closedBy: e.closed_by,
-      waitingReason: e.waiting_reason,
-      workDone: e.work_done,
-      completionNote: e.completion_note,
-      createdAt: e.created_at || e.reported_at,
-      updatedAt: e.updated_at || e.reported_at,
-      history: (t || e.status_history || []).map(h => ({
-        id: h.id,
-        workOrderId: h.work_order_id,
-        status: h.status,
-        timestamp: h.timestamp || h.created_at,
-        actorName: h.actor_name,
-        note: h.note
-      }))
+      photoUrl: e.photo_url || e.photoUrl || null,
+      afterPhotoUrl: e.after_photo_url || e.afterPhotoUrl || null,
+      guestAffected: !!(e.guest_affected || e.guestAffected),
+      priority: e.priority || "P3",
+      suggestedPriority: e.suggested_priority || e.suggestedPriority || null,
+      status: e.status || "NEW",
+      assignedTechnicianId: e.assigned_technician_id || e.assignedTechnicianId || null,
+      assignedTechnicianName: e.assigned_technician_name || e.assignedTechnicianName || null,
+      reportedAt: e.reported_at || e.reportedAt || e.created_at || new Date().toISOString(),
+      acceptedAt: e.accepted_at || e.acceptedAt || null,
+      startedAt: e.started_at || e.startedAt || null,
+      waitingAt: e.waiting_at || e.waitingAt || null,
+      completedAt: e.completed_at || e.completedAt || null,
+      closedAt: e.closed_at || e.closedAt || null,
+      acceptedBy: e.accepted_by || e.acceptedBy || null,
+      closedBy: e.closed_by || e.closedBy || null,
+      waitingReason: e.waiting_reason || e.waitingReason || null,
+      workDone: e.work_done || e.workDone || null,
+      completionNote: e.completion_note || e.completionNote || null,
+      createdAt: e.created_at || e.createdAt || e.reported_at || new Date().toISOString(),
+      updatedAt: e.updated_at || e.updatedAt || e.reported_at || new Date().toISOString(),
+      history: historyList
     };
   }
 
   async function n(e) {
     try {
+      if (!e) return;
       let desc = e.description || "",
           hotel = e.hotelName || "ME Colombo";
-      if (!desc.startsWith("[Property:")) {
+      if (typeof desc === "string" && !desc.startsWith("[Property:")) {
         desc = "[Property: " + hotel + "]\n" + desc;
       }
       let payload = {
@@ -86,7 +112,7 @@
         room_number: e.roomNumber || null,
         category: e.category,
         title: e.title,
-        description: desc.trim() || null,
+        description: typeof desc === "string" ? desc.trim() || null : null,
         photo_url: e.photoUrl || null,
         after_photo_url: e.afterPhotoUrl || null,
         guest_affected: e.guestAffected ? 1 : 0,
@@ -108,7 +134,6 @@
         completion_note: e.completionNote || null
       };
 
-      // Try PUT first
       let res = await fetch(API_BASE + "/api/work-orders/" + encodeURIComponent(payload.id), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -116,7 +141,6 @@
       });
 
       if (!res.ok && res.status === 404) {
-        // Create if not found
         await fetch(API_BASE + "/api/work-orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -124,7 +148,7 @@
         });
       }
     } catch (err) {
-      console.error("Cloudflare Worker syncWorkOrder error:", err);
+      console.warn("Cloudflare Worker syncWorkOrder error:", err);
     }
   }
 
@@ -134,9 +158,9 @@
       if (!res.ok) return null;
       let data = await res.json();
       if (!data || !Array.isArray(data)) return [];
-      return data.map(item => i(item, item.status_history || []));
+      return data.map(item => i(item, item.status_history || [])).filter(Boolean);
     } catch (err) {
-      console.error("Cloudflare Worker fetchWorkOrders error:", err);
+      console.warn("Cloudflare Worker fetchWorkOrders error:", err);
       return null;
     }
   }
@@ -144,38 +168,40 @@
   async function s(id, num) {
     try {
       let target = id || num;
+      if (!target) return false;
       let res = await fetch(API_BASE + "/api/work-orders/" + encodeURIComponent(target), {
         method: "DELETE"
       });
       return res.ok;
     } catch (err) {
-      console.error("Cloudflare Worker deleteWorkOrder error:", err);
+      console.warn("Cloudflare Worker deleteWorkOrder error:", err);
       return false;
     }
   }
 
   function d(e) {
+    if (!e) return null;
     let t = (e.email || "").split("@")[0].toLowerCase(),
         r = "",
         o = "";
     if (e.phone) {
       try {
         let a = JSON.parse(e.phone);
-        if (a.username) t = a.username.toLowerCase();
-        if (a.password) r = a.password;
-        if (a.phone) o = a.phone;
+        if (a && a.username) t = a.username.toLowerCase();
+        if (a && a.password) r = a.password;
+        if (a && a.phone) o = a.phone;
       } catch (err) {
         o = e.phone;
       }
     }
     return {
       id: e.id,
-      name: e.name,
+      name: e.name || "User",
       username: t,
-      email: e.email,
+      email: e.email || "",
       password: r,
-      role: e.role,
-      department: e.department,
+      role: e.role || "ENGINEERING",
+      department: e.department || "Engineering",
       phone: o,
       active: e.active !== 0 && e.active !== false
     };
@@ -183,17 +209,18 @@
 
   async function c(e) {
     try {
+      if (!e) return false;
       let phoneData = JSON.stringify({
-        username: (e.username || e.email.split("@")[0]).trim().toLowerCase(),
+        username: ((e.username || (e.email ? e.email.split("@")[0] : "user"))).trim().toLowerCase(),
         password: e.password || "",
         phone: e.phone || ""
       });
       let payload = {
         id: (0, a.a)(e.id) ? e.id : (0, a.l)(),
-        name: e.name.trim(),
-        email: e.email.trim().toLowerCase(),
-        role: e.role,
-        department: e.department || "Administration",
+        name: (e.name || "User").trim(),
+        email: (e.email || "user@mecolombo.com").trim().toLowerCase(),
+        role: e.role || "ENGINEERING",
+        department: e.department || "Engineering",
         phone: phoneData,
         active: e.active ? 1 : 0
       };
@@ -204,13 +231,14 @@
       });
       return res.ok;
     } catch (err) {
-      console.error("Cloudflare Worker syncProfile error:", err);
+      console.warn("Cloudflare Worker syncProfile error:", err);
       return false;
     }
   }
 
   async function u(id) {
     try {
+      if (!id) return false;
       let res = await fetch(API_BASE + "/api/profiles/" + encodeURIComponent(id), {
         method: "DELETE"
       });
@@ -226,7 +254,7 @@
       if (!res.ok) return null;
       let data = await res.json();
       if (!Array.isArray(data)) return [];
-      return data.map(d);
+      return data.map(d).filter(Boolean);
     } catch (err) {
       return null;
     }
@@ -295,12 +323,13 @@
     }
     async sendNewTicketAlert(e){
       try{
+        if(!e) return;
         await this.init();
-        let t=e.roomNumber?"Room "+e.roomNumber:e.location,r=Math.floor(Date.now()%1e5);
+        let t=e.roomNumber?"Room "+e.roomNumber:(e.location || "Hotel Area"),r=Math.floor(Date.now()%1e5);
         await u.W.schedule({
           notifications:[{
-            id:r,title:"🚨 ["+e.priority+"] NEW WORK ORDER: "+e.workOrderNumber,
-            body:"📍 "+t+" • "+e.title+" ("+e.departmentName+")",
+            id:r,title:"🚨 ["+(e.priority || "P3")+"] NEW WORK ORDER: "+(e.workOrderNumber || ""),
+            body:"📍 "+t+" • "+(e.title || "Request")+" ("+(e.departmentName || "General")+")",
             channelId:m,schedule:{at:new Date(Date.now()+150)},sound:"default",
             actionTypeId:"OPEN_TICKET",extra:{workOrderNumber:e.workOrderNumber}
           }]
@@ -319,7 +348,7 @@
     [f,w]=(0,a.useState)(i.Y4),
     [y,N]=(0,a.useState)(i.rp),
     [S,v]=(0,a.useState)(null),
-    [I,b]=(0,a.useState)(i.RR),
+    [I,b]=(0,a.useState)([]),
     [A,k]=(0,a.useState)(!1),
     [E,C]=(0,a.useState)(!0),
     [O,x]=(0,a.useState)(null);
@@ -327,7 +356,7 @@
     // 1. Initial Local State Loading
     (0,a.useEffect)(()=>{
       try{
-        let e="2026_09_16_CLOUDFLARE_V1";
+        let e="2026_09_16_CLOUDFLARE_V2";
         if(localStorage.getItem("simple_eng_data_version")!==e){
           localStorage.removeItem("simple_eng_work_orders");
           localStorage.removeItem("simple_eng_work_orders_v2");
@@ -337,38 +366,54 @@
           localStorage.setItem("simple_eng_work_orders_v5",JSON.stringify([]));
           b([]);
         } else {
-          let e=localStorage.getItem("simple_eng_work_orders_v5");
-          if(e){
-            b(JSON.parse(e));
+          let raw=localStorage.getItem("simple_eng_work_orders_v5");
+          if(raw){
+            try {
+              let parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) {
+                b(parsed.map(item => (0,d._f)(item, item.history || item.status_history || [])).filter(Boolean));
+              } else {
+                b([]);
+              }
+            } catch(e) {
+              b([]);
+            }
           } else {
             b([]);
           }
         }
         let t=localStorage.getItem("simple_eng_settings");
-        if(t) m(JSON.parse(t)); else m(i.jM);
+        if(t) try { m(JSON.parse(t)); } catch(e){ m(i.jM); } else m(i.jM);
         let r=localStorage.getItem("simple_eng_departments");
-        if(r) h(JSON.parse(r));
+        if(r) try { h(JSON.parse(r)); } catch(e){}
         let o=localStorage.getItem("simple_eng_technicians");
-        if(o) w(JSON.parse(o));
+        if(o) try { w(JSON.parse(o)); } catch(e){}
         let a=localStorage.getItem("simple_eng_users_v3");
         if(a){
-          let e=JSON.parse(a).map(e=>"ADMIN"===e.role||"mecolomboadmin"===e.username?{...e,password:"adminme1234"}:e);
-          N(e);
+          try {
+            let parsed = JSON.parse(a);
+            if (Array.isArray(parsed)) {
+              let e=parsed.map(e=>"ADMIN"===e.role||"mecolomboadmin"===e.username?{...e,password:"adminme1234"}:e);
+              N(e);
+            }
+          } catch(e){}
         } else {
           N(i.rp);
           localStorage.setItem("simple_eng_users_v3",JSON.stringify(i.rp));
         }
         let storedUser=localStorage.getItem("simple_eng_current_user");
         if(storedUser){
-          let e=JSON.parse(storedUser);
-          if(e&&("ADMIN"===e.role||"mecolomboadmin"===e.username)) e.password="adminme1234";
-          v(e);
+          try {
+            let e=JSON.parse(storedUser);
+            if(e&&("ADMIN"===e.role||"mecolomboadmin"===e.username)) e.password="adminme1234";
+            v(e);
+          } catch(e){}
         } else {
           v(null);
         }
         k(l.getMuted());
       }catch(err){
-        console.error("Error loading stored engineering data:",err);
+        console.warn("Error loading stored engineering data:",err);
       }finally{
         n(!0);
       }
@@ -383,10 +428,9 @@
           localStorage.setItem("simple_eng_technicians",JSON.stringify(f));
           localStorage.setItem("simple_eng_users_v3",JSON.stringify(y));
           if(S) localStorage.setItem("simple_eng_current_user",JSON.stringify(S)); else localStorage.removeItem("simple_eng_current_user");
-          // Save only light data without raw base64
-          localStorage.setItem("simple_eng_work_orders_v5",JSON.stringify(I));
+          localStorage.setItem("simple_eng_work_orders_v5",JSON.stringify(I || []));
         }catch(e){
-          console.warn("Storage quota protected in EngineeringProvider:",e);
+          console.warn("Storage notice:",e);
         }
       }
     },[r,u,p,f,y,S,I]);
@@ -402,26 +446,28 @@
           let [orders, users] = await Promise.all([(0, d.n5)(), (0, d.M1)()]);
           if (!isActive) return;
 
-          if (orders !== null) {
-            C(true); // isCloudConnected = true
-            x(new Date()); // lastCloudSync = new Date()
+          if (orders !== null && Array.isArray(orders)) {
+            C(true);
+            x(new Date());
             b(prev => {
+              let safePrev = Array.isArray(prev) ? prev : [];
               let canAlert = (S?.role === "ENGINEERING" || S?.role === "ADMIN" || S?.role === "TECHNICIAN");
               if (canAlert) {
-                orders.filter(t => t.status === "NEW" && !prev.some(p => p.workOrderNumber === t.workOrderNumber)).forEach(t => {
+                orders.filter(t => t && t.status === "NEW" && !safePrev.some(p => p && p.workOrderNumber === t.workOrderNumber)).forEach(t => {
                   g.sendNewTicketAlert(t);
                 });
               }
-              return orders.sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime());
+              return orders.filter(Boolean).sort((a, b) => new Date(b.reportedAt || 0).getTime() - new Date(a.reportedAt || 0).getTime());
             });
           }
 
-          if (users !== null) {
+          if (users !== null && Array.isArray(users)) {
             N(prev => {
               let map = new Map();
-              i.rp.forEach(u => map.set(u.email.toLowerCase(), u));
-              prev.forEach(u => map.set(u.email.toLowerCase(), u));
-              users.forEach(u => map.set(u.email.toLowerCase(), u));
+              let safePrev = Array.isArray(prev) ? prev : [];
+              i.rp.forEach(u => u && u.email && map.set(u.email.toLowerCase(), u));
+              safePrev.forEach(u => u && u.email && map.set(u.email.toLowerCase(), u));
+              users.forEach(u => u && u.email && map.set(u.email.toLowerCase(), u));
               return Array.from(map.values()).map(u => "ADMIN" === u.role || "mecolomboadmin" === u.username ? { ...u, password: "adminme1234" } : u);
             });
           }
@@ -440,61 +486,70 @@
       };
     },[r, S?.role]);
 
-    let D = I.some(e => "NEW" === e.status);
+    let D = Array.isArray(I) && I.some(e => e && "NEW" === e.status);
 
     (0,a.useEffect)(()=>{
       if(!r) return;
       let e = (S?.role === "ENGINEERING" || S?.role === "ADMIN" || S?.role === "TECHNICIAN");
-      if (D && u.soundAlertEnabled && !A && e) {
+      if (D && u && u.soundAlertEnabled && !A && e) {
         l.startLoopingAlert();
       } else {
         l.stopAlert();
       }
       return () => { l.stopAlert(); };
-    },[r, D, u.soundAlertEnabled, A, S?.role]);
+    },[r, D, u?.soundAlertEnabled, A, S?.role]);
 
     return (0,o.jsx)(_.Provider,{
       value:{
-        workOrders:I,
-        users:y,
-        departments:p,
-        technicians:f,
-        settings:u,
-        currentUser:S,
-        isLoaded:r,
+        workOrders: Array.isArray(I) ? I : [],
+        users: Array.isArray(y) ? y : [],
+        departments: Array.isArray(p) ? p : [],
+        technicians: Array.isArray(f) ? f : [],
+        settings: u || i.jM,
+        currentUser: S,
+        isLoaded: r,
         logout:()=>{ v(null); localStorage.removeItem("simple_eng_current_user"); },
-        hasUnacceptedNewOrders:D,
-        isMuted:A,
+        hasUnacceptedNewOrders: D,
+        isMuted: A,
         toggleMute:()=>{ let e=!A; k(e); l.setMuted(e); },
         enableAudio:()=>l.unlockAudio(),
-        isCloudConnected:E,
-        lastCloudSync:O,
-        setCurrentUser:v,
-        switchUser:e=>{ let t=y.find(t=>t.id===e); if(t) v(t); },
-        createWorkOrder:e=>{
+        isCloudConnected: E,
+        lastCloudSync: O,
+        setCurrentUser: v,
+        switchUser: e => { let t=(y||[]).find(t=>t.id===e); if(t) v(t); },
+        createWorkOrder: e => {
           let year = new Date().getFullYear(),
-              seqs = I.map(item => { let p=item.workOrderNumber.split("-"); return p.length===3 ? parseInt(p[2],10):0; }).filter(n => !isNaN(n)),
-              nextNum = seqs.length > 0 ? Math.max(...seqs) + 1 : 46,
+              safeI = Array.isArray(I) ? I : [],
+              seqs = safeI.map(item => {
+                let wo = item && (item.workOrderNumber || item.work_order_number);
+                if (typeof wo === "string") {
+                  let p = wo.split("-");
+                  return p.length === 3 ? parseInt(p[2], 10) : 0;
+                }
+                return 0;
+              }).filter(n => !isNaN(n) && n > 0),
+              nextNum = seqs.length > 0 ? Math.max(...seqs) + 1 : 60,
               woNum = "WO-" + year + "-" + String(nextNum).padStart(4, "0"),
               now = new Date().toISOString(),
               uuid = (0,c.l)(),
               newOrder = {
                 id: uuid,
                 workOrderNumber: woNum,
-                hotelName: e.hotelName || u.hotelName || "ME Colombo",
-                reportedBy: e.reportedBy,
-                reportedById: e.reportedById || S?.id,
-                departmentName: e.departmentName,
-                location: e.location,
-                roomNumber: e.roomNumber,
-                category: e.category,
-                title: e.title,
-                description: e.description,
-                photoUrl: e.photoUrl,
-                guestAffected: e.guestAffected,
-                priority: e.priority,
-                suggestedPriority: e.suggestedPriority,
-                priorityRationale: e.priorityRationale,
+                hotelName: e.hotelName || (u && u.hotelName) || "ME Colombo",
+                reportedBy: e.reportedBy || "Staff",
+                reportedById: e.reportedById || S?.id || null,
+                departmentName: e.departmentName || "Engineering",
+                location: e.location || "",
+                roomNumber: e.roomNumber || null,
+                category: e.category || "General",
+                title: e.title || "Maintenance Request",
+                description: e.description || "",
+                photoUrl: e.photoUrl || null,
+                afterPhotoUrl: null,
+                guestAffected: !!e.guestAffected,
+                priority: e.priority || "P3",
+                suggestedPriority: e.suggestedPriority || null,
+                priorityRationale: e.priorityRationale || null,
                 status: "NEW",
                 reportedAt: now,
                 createdAt: now,
@@ -504,25 +559,26 @@
                   workOrderId: uuid,
                   status: "NEW",
                   timestamp: now,
-                  actorName: e.reportedBy + " (" + e.departmentName + ")",
+                  actorName: (e.reportedBy || "Staff") + " (" + (e.departmentName || "Engineering") + ")",
                   note: "Request created and sent to Engineering"
                 }]
               };
-          b(prev => [newOrder, ...prev]);
+          b(prev => [newOrder, ...(Array.isArray(prev) ? prev : [])]);
           (0,d.oG)(newOrder);
           return newOrder;
         },
-        acceptWorkOrder:(e,t)=>{
+        acceptWorkOrder: (e,t) => {
           let actor = t || S?.name || "Staff", now = new Date().toISOString();
-          b(prev => prev.map(item => {
-            if(item.id === e){
+          b(prev => (Array.isArray(prev) ? prev : []).map(item => {
+            if(item && item.id === e){
+              let curHist = Array.isArray(item.history) ? item.history : [];
               let upd = {
                 ...item,
                 status: "ACCEPTED",
                 acceptedAt: now,
                 acceptedBy: actor,
                 updatedAt: now,
-                history: [...item.history, { id: (0,c.l)(), workOrderId: e, status: "ACCEPTED", timestamp: now, actorName: actor, note: "Accepted request by Engineering" }]
+                history: [...curHist, { id: (0,c.l)(), workOrderId: e, status: "ACCEPTED", timestamp: now, actorName: actor, note: "Accepted request by Engineering" }]
               };
               (0,d.oG)(upd);
               return upd;
@@ -530,16 +586,17 @@
             return item;
           }));
         },
-        assignTechnician:(e,t,r)=>{
+        assignTechnician: (e,t,r) => {
           let now = new Date().toISOString();
-          b(prev => prev.map(item => {
-            if(item.id === e){
+          b(prev => (Array.isArray(prev) ? prev : []).map(item => {
+            if(item && item.id === e){
+              let curHist = Array.isArray(item.history) ? item.history : [];
               let upd = {
                 ...item,
                 assignedTechnicianId: t,
                 assignedTechnicianName: r,
                 updatedAt: now,
-                history: [...item.history, { id: (0,c.l)(), workOrderId: e, status: item.status, timestamp: now, actorName: S?.name || "Staff", note: "Assigned to technician " + r }]
+                history: [...curHist, { id: (0,c.l)(), workOrderId: e, status: item.status, timestamp: now, actorName: S?.name || "Staff", note: "Assigned to technician " + r }]
               };
               (0,d.oG)(upd);
               return upd;
@@ -547,16 +604,17 @@
             return item;
           }));
         },
-        startWork:e=>{
+        startWork: e => {
           let now = new Date().toISOString();
-          b(prev => prev.map(item => {
-            if(item.id === e){
+          b(prev => (Array.isArray(prev) ? prev : []).map(item => {
+            if(item && item.id === e){
+              let curHist = Array.isArray(item.history) ? item.history : [];
               let upd = {
                 ...item,
                 status: "IN_PROGRESS",
                 startedAt: item.startedAt || now,
                 updatedAt: now,
-                history: [...item.history, { id: (0,c.l)(), workOrderId: e, status: "IN_PROGRESS", timestamp: now, actorName: S?.name || "Staff", note: "Technician started work" }]
+                history: [...curHist, { id: (0,c.l)(), workOrderId: e, status: "IN_PROGRESS", timestamp: now, actorName: S?.name || "Staff", note: "Technician started work" }]
               };
               (0,d.oG)(upd);
               return upd;
@@ -564,17 +622,18 @@
             return item;
           }));
         },
-        setWaiting:(e,t)=>{
+        setWaiting: (e,t) => {
           let now = new Date().toISOString();
-          b(prev => prev.map(item => {
-            if(item.id === e){
+          b(prev => (Array.isArray(prev) ? prev : []).map(item => {
+            if(item && item.id === e){
+              let curHist = Array.isArray(item.history) ? item.history : [];
               let upd = {
                 ...item,
                 status: "WAITING",
                 waitingAt: now,
                 waitingReason: t,
                 updatedAt: now,
-                history: [...item.history, { id: (0,c.l)(), workOrderId: e, status: "WAITING", timestamp: now, actorName: S?.name || "Staff", note: "Put on hold: " + t }]
+                history: [...curHist, { id: (0,c.l)(), workOrderId: e, status: "WAITING", timestamp: now, actorName: S?.name || "Staff", note: "Put on hold: " + t }]
               };
               (0,d.oG)(upd);
               return upd;
@@ -582,15 +641,16 @@
             return item;
           }));
         },
-        resumeWork:e=>{
+        resumeWork: e => {
           let now = new Date().toISOString();
-          b(prev => prev.map(item => {
-            if(item.id === e){
+          b(prev => (Array.isArray(prev) ? prev : []).map(item => {
+            if(item && item.id === e){
+              let curHist = Array.isArray(item.history) ? item.history : [];
               let upd = {
                 ...item,
                 status: "IN_PROGRESS",
                 updatedAt: now,
-                history: [...item.history, { id: (0,c.l)(), workOrderId: e, status: "IN_PROGRESS", timestamp: now, actorName: S?.name || "Staff", note: "Resumed work" }]
+                history: [...curHist, { id: (0,c.l)(), workOrderId: e, status: "IN_PROGRESS", timestamp: now, actorName: S?.name || "Staff", note: "Resumed work" }]
               };
               (0,d.oG)(upd);
               return upd;
@@ -598,10 +658,11 @@
             return item;
           }));
         },
-        completeWork:(e,t,r,o)=>{
+        completeWork: (e,t,r,o) => {
           let now = new Date().toISOString();
-          b(prev => prev.map(item => {
-            if(item.id === e){
+          b(prev => (Array.isArray(prev) ? prev : []).map(item => {
+            if(item && item.id === e){
+              let curHist = Array.isArray(item.history) ? item.history : [];
               let upd = {
                 ...item,
                 status: "COMPLETED",
@@ -610,7 +671,7 @@
                 completionNote: r,
                 afterPhotoUrl: o,
                 updatedAt: now,
-                history: [...item.history, { id: (0,c.l)(), workOrderId: e, status: "COMPLETED", timestamp: now, actorName: S?.name || "Staff", note: "Work completed: " + t }]
+                history: [...curHist, { id: (0,c.l)(), workOrderId: e, status: "COMPLETED", timestamp: now, actorName: S?.name || "Staff", note: "Work completed: " + t }]
               };
               (0,d.oG)(upd);
               return upd;
@@ -618,17 +679,18 @@
             return item;
           }));
         },
-        closeWorkOrder:(e,t,r)=>{
+        closeWorkOrder: (e,t,r) => {
           let now = new Date().toISOString(), actor = t || S?.name || "Staff";
-          b(prev => prev.map(item => {
-            if(item.id === e){
+          b(prev => (Array.isArray(prev) ? prev : []).map(item => {
+            if(item && item.id === e){
+              let curHist = Array.isArray(item.history) ? item.history : [];
               let upd = {
                 ...item,
                 status: "CLOSED",
                 closedAt: now,
                 closedBy: actor,
                 updatedAt: now,
-                history: [...item.history, { id: (0,c.l)(), workOrderId: e, status: "CLOSED", timestamp: now, actorName: actor, note: r ? "Verified & closed: " + r : "Verified & closed request" }]
+                history: [...curHist, { id: (0,c.l)(), workOrderId: e, status: "CLOSED", timestamp: now, actorName: actor, note: r ? "Verified & closed: " + r : "Verified & closed request" }]
               };
               (0,d.oG)(upd);
               return upd;
@@ -636,21 +698,21 @@
             return item;
           }));
         },
-        deleteWorkOrder:(e,t)=>{
-          b(prev => prev.filter(item => item.id !== e && item.workOrderNumber !== e && (!t || item.workOrderNumber !== t)));
+        deleteWorkOrder: (e,t) => {
+          b(prev => (Array.isArray(prev) ? prev : []).filter(item => item && item.id !== e && item.workOrderNumber !== e && (!t || item.workOrderNumber !== t)));
           (0,d.xN)(e,t);
         },
-        updateSettings:e=>{ m(prev => ({...prev, ...e})); },
-        addDepartment:e=>{ let t={...e, id:"dept-"+Date.now()}; h(prev=>[...prev,t]); },
-        deleteDepartment:e=>{ h(prev=>prev.filter(t=>t.id!==e)); },
-        addTechnician:e=>{ let t={...e, id:"tech-"+Date.now()}; w(prev=>[...prev,t]); },
-        toggleTechnician:e=>{ w(prev=>prev.map(t=>t.id===e?{...t,active:!t.active}:t)); },
-        addUser:e=>{ let t={...e, id:(0,c.l)()}; N(prev=>[...prev,t]); (0,d.pk)(t); },
-        deleteUser:e=>{ N(prev=>prev.filter(t=>t.id!==e)); (0,d.mY)(e); },
-        toggleUser:e=>{ N(prev=>prev.map(t=>t.id===e?{...t,active:!t.active}:t)); (0,d.pk)(e); },
-        resetToDemoData:()=>{ m(i.jM); h(i.gm); w(i.Y4); N(i.rp); v(null); b(i.RR); localStorage.clear(); }
+        updateSettings: e => { m(prev => ({...(prev || {}), ...e})); },
+        addDepartment: e => { let t={...e, id:"dept-"+Date.now()}; h(prev=>[...(Array.isArray(prev)?prev:[]),t]); },
+        deleteDepartment: e => { h(prev=>(Array.isArray(prev)?prev:[]).filter(t=>t.id!==e)); },
+        addTechnician: e => { let t={...e, id:"tech-"+Date.now()}; w(prev=>[...(Array.isArray(prev)?prev:[]),t]); },
+        toggleTechnician: e => { w(prev=>(Array.isArray(prev)?prev:[]).map(t=>t.id===e?{...t,active:!t.active}:t)); },
+        addUser: e => { let t={...e, id:(0,c.l)()}; N(prev=>[...(Array.isArray(prev)?prev:[]),t]); (0,d.pk)(t); },
+        deleteUser: e => { N(prev=>(Array.isArray(prev)?prev:[]).filter(t=>t.id!==e)); (0,d.mY)(e); },
+        toggleUser: e => { N(prev=>(Array.isArray(prev)?prev:[]).map(t=>t.id===e?{...t,active:!t.active}:t)); (0,d.pk)(e); },
+        resetToDemoData: () => { m(i.jM); h(i.gm); w(i.Y4); N(i.rp); v(null); b([]); localStorage.clear(); }
       },
-      children:t
+      children: t
     });
   }
 
