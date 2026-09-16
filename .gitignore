@@ -22,13 +22,18 @@ next-env.d.ts
 Thumbs.db
 
 # Android / Mobile Builds / Legacy
-android/
+.gradle/
+**/.gradle/
+**/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/capacitor-cordova-android-plugins/.gradle/
+local.properties
 ios/
-assets/
-app-v2.js
-index.html
-styles.css
-
 # Environment
 .env
 .env.local
