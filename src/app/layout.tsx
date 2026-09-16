@@ -4,6 +4,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { StorageSanitizer } from "@/components/StorageSanitizer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -29,6 +30,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${outfit.variable} h-full`}>
       <body className="h-full bg-slate-50 text-slate-900 font-sans antialiased flex overflow-hidden">
         <ToastProvider>
+          <StorageSanitizer />
           {/* Main App Layout */}
           <div className="flex h-full w-full overflow-hidden">
             <Sidebar />
