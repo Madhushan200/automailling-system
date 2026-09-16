@@ -126,7 +126,7 @@ export default function BulkVoucherPage() {
         }),
       });
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       if (!res.ok || !json.success) {
         throw new Error(json.error || "Email delivery failed");
       }
@@ -206,7 +206,7 @@ export default function BulkVoucherPage() {
             settings,
           }),
         });
-        const json = await res.json();
+        const json = (await res.json()) as any;
         if (!res.ok || !json.success) throw new Error(json.error);
 
         setGroupedVouchers((prev) =>

@@ -604,7 +604,7 @@ export function TourDataEntryWorkspace({ tourId, isNew = false }: Props) {
         }),
       });
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       if (!res.ok || !json.success) {
         throw new Error(json.error || "Delivery failed");
       }
@@ -689,7 +689,7 @@ export function TourDataEntryWorkspace({ tourId, isNew = false }: Props) {
             settings,
           }),
         });
-        const json = await res.json();
+        const json = (await res.json()) as any;
         if (!res.ok || !json.success) throw new Error(json.error);
 
         setVouchers((prev) =>

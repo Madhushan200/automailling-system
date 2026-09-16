@@ -56,7 +56,7 @@ export default function SettingsPage() {
         }),
       });
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       if (res.ok && json.success) {
         showToast(`SMTP Success! Test email dispatched to ${testEmailRecipient}`, "success");
       } else {

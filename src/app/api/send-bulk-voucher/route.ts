@@ -6,7 +6,7 @@ import { GroupedHotelVoucher, CompanySettings } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as any;
     const { voucher, customSubject, customBody, settings }: {
       voucher: GroupedHotelVoucher;
       customSubject?: string;

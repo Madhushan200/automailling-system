@@ -3,7 +3,7 @@ import { getVoucherPDFBuffer } from "@/lib/pdf";
 
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json();
+    const data = (await req.json()) as any;
     const pdfBuffer = getVoucherPDFBuffer(data);
 
     return new NextResponse(pdfBuffer as any, {

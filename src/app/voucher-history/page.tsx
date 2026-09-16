@@ -73,7 +73,7 @@ export default function VoucherHistoryPage() {
         }),
       });
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       if (res.ok && json.success) {
         showToast(`Successfully re-dispatched to ${hName}!`, "success");
       } else {
